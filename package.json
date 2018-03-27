@@ -1,0 +1,19 @@
+{
+  "name": "char-seo",
+  "version": "0.0.1",
+  "description": "Customizable SEO linting for your webpage",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/madsonic/char-seo.git"
+  },
+  "author": "madsonic",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/madsonic/char-seo/issues"
+  },
+  "homepage": "https://github.com/madsonic/char-seo#readme"
+}
