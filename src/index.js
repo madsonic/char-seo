@@ -1,8 +1,30 @@
+// @flow
 const expect = require('chai').expect;
 let htmlparser2 = require('htmlparser2');
 
+type HtmlNode = {
+  tag: HtmlTag,
+  attributes?: Attribute[]
+}
+
+// Use strings for now. Can be made more robust
+// by defining valid html tags
+type HtmlTag = string
+
+type Attribute = {
+  attr: string
+}
+
 class CharSeo {
-  constructor(filePath = '', data = '') {
+  filePath: string;
+  treePath: HtmlNode[];
+  attributesPresent: Attribute[];
+  attributesAbsent: Attribute[];
+  _checkAttrExistence: boolean;
+  _checkTagExistence: boolean;
+  _htmlData: string
+
+  constructor(filePath: string, data: string) {
     this.filePath = filePath;
     this.treePath = [];
     this.attributesPresent = [];
@@ -17,25 +39,25 @@ class CharSeo {
     return this;
   }
 
-  tag(htmlTag) {
-    this.treePath = [htmlTag];
+  tag(node: HtmlNode) {
+    this.treePath = [node];
     return this;
   }
 
-  hasChildren(htmlTags) {
+  hasChildren(nodes: HtmlNode[]) {
     // check for root existence
-    this.treePath = [...this.treePath, ...htmlTags];
+    this.treePath = [...this.treePath, ...nodes];
     return this;
   }
 
-  hasChild(htmlTag) {
+  hasChild(node: HtmlNode) {
     // check for root existence
-    this.treePath = [...this.treePath, htmlTag];
+    this.treePath = [...this.treePath, node];
     return this;
   }
 
-  hasAttributes(attributes) {
-    this.attributesPresent = [...this.attributesPresent, ...attributes];
+  hasAttributes(attributes: Attribute[]) {
+    this.attributesPresent = [...attributes];
     return this;
   }
 
@@ -47,6 +69,8 @@ class CharSeo {
 
     const parser = new htmlparser2.Parser({
       onopentag: (tag, attr) => {
+        console.log(tag);
+        console.log(attr);
         if (tag === tagStack[tagStack.length - 1]) {
           undoStack.push(tagStack.pop());
         }
@@ -116,4 +140,4 @@ expect(new CharSeo('', testHtml).tag('div').exist()).to.be.true;
 expect(new CharSeo('', testHtml).tag('div').hasChild('div').exist()).to.be.true;
 expect(new CharSeo('', testHtml).tag('div').hasChildren(['div', 'div']).exist()).to.be.true;
 expect(new CharSeo('', testHtml).tag('h2').exist()).to.be.false;
-expect(new CharSeo('', testHtml).tag('img').with('alt').exist()).to.be.true;
+expect(new CharSeo('', testHtml).tag('img').hasAttributes(['alt']).exist()).to.be.true;

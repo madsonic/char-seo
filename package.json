@@ -2,9 +2,11 @@
   "name": "char-seo",
   "version": "0.0.1",
   "description": "Customizable SEO linting for your webpage",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "start": "babel-node index.js"
+    "build": "flow-remove-types src/ -d lib/",
+    "flow": "flow",
+    "start": "node lib/index"
   },
   "repository": {
     "type": "git",
@@ -20,6 +22,8 @@
     "htmlparser2": "^3.9.2"
   },
   "devDependencies": {
-    "chai": "^4.1.2"
+    "chai": "^4.1.2",
+    "flow-bin": "^0.68.0",
+    "flow-remove-types": "^1.2.3"
   }
 }
