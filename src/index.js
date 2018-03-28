@@ -1,10 +1,11 @@
 // @flow
 const expect = require('chai').expect;
+const _ = require('lodash');
 let htmlparser2 = require('htmlparser2');
 
 type HtmlNode = {
   tag: HtmlTag,
-  attributes?: Attribute[]
+  attributes?: Attribute
 }
 
 // Use strings for now. Can be made more robust
@@ -17,7 +18,7 @@ type Attribute = {
 
 class CharSeo {
   filePath: string;
-  treePath: HtmlNode[];
+  treePath: HtmlNode[]; // path in a tree with the first node closest to the root
   attributesPresent: Attribute[];
   attributesAbsent: Attribute[];
   _checkAttrExistence: boolean;
@@ -27,68 +28,91 @@ class CharSeo {
   constructor(filePath: string, data: string) {
     this.filePath = filePath;
     this.treePath = [];
-    this.attributesPresent = [];
-    this.attributesAbsent = [];
 
-    this._checkAttrExistence = true;
-    this._checkTagExistence = true;
     this._htmlData = data;
   }
 
-  get appear() {
+  get appear(): CharSeo {
     return this;
   }
 
-  tag(node: HtmlNode) {
+  tag(node: HtmlNode): CharSeo {
     this.treePath = [node];
     return this;
   }
 
-  hasChildren(nodes: HtmlNode[]) {
+  hasChildren(nodes: HtmlNode[]): CharSeo {
     // check for root existence
     this.treePath = [...this.treePath, ...nodes];
     return this;
   }
 
-  hasChild(node: HtmlNode) {
+  hasChild(node: HtmlNode): CharSeo {
     // check for root existence
     this.treePath = [...this.treePath, node];
     return this;
   }
 
-  hasAttributes(attributes: Attribute[]) {
+  hasAttributes(attributes: Attribute[]): CharSeo {
     this.attributesPresent = [...attributes];
     return this;
   }
 
-  exist() {
+  /**
+  Search for specified tree path in the DOM.
+
+  The explored and unexplored nodes are maintained by the explored and unexplored stacks. Top of the unexplored stack contains the node in the tree path closest to the root, while the bottom of the explored stack is such a node. An explored nodes that is of the incorrect relationship with respect next unexplored node will be thrown back to the unexplored stack.
+
+  If the tree path exists in the DOM, the unexplored stack will be emptied out into the explored stack, vice versa if such a path does not exist.
+
+  This is a terminal verb
+  */
+  exist(): boolean {
     const treePath = this.treePath;
-    let tagStack = [...treePath].reverse();
-    let undoStack = [];
-    let result = false;
+    let unexploredStack = [...treePath].reverse();
+    let exploredStack = [];
+    let treePathExplored = _.isEqual(treePath, exploredStack);
+    let openedTags: {tag?: HtmlTag} = {}; // track open/close tag pairs
 
     const parser = new htmlparser2.Parser({
       onopentag: (tag, attr) => {
-        console.log(tag);
-        console.log(attr);
-        if (tag === tagStack[tagStack.length - 1]) {
-          undoStack.push(tagStack.pop());
+        if (unexploredStack.length <= 0) {
+          return;
+        }
+
+        const top: HtmlNode = _.last(unexploredStack);
+        if (top.tag === tag) {
+          const topAttr = top.attributes || {};
+          if (openedTags[tag]) {
+            openedTags[tag] += 1;
+          }
+
+          // passes when top node attributes are subset of
+          // current node. null attributes is considered subset
+          if (Object.keys(topAttr).every(key => topAttr[key] === attr[key])) {
+            exploredStack.push(unexploredStack.pop());
+            openedTags[tag] = openedTags[tag] ? openedTags[tag] + 1 : 1
+          }
         }
 
         // check if all target tags have been traversed
-        if (treePath.length !== 0 && undoStack.length === treePath.length) {
-          for (let i = 0; i < undoStack.length; ++i) {
-            // check for equality in case stack manipulation was incorrect
-            if (undoStack[i] !== treePath[i]) {
-              return;
-            }
-          }
-          result = true;
+        // if path is found we stop parsing
+        treePathExplored = _.isEqual(treePath, exploredStack);
+        if (treePathExplored) {
+          parser.reset();
         }
+
       },
       onclosetag: (tag) => {
-        if (tag === undoStack[undoStack.length - 1]) {
-          tagStack.push(undoStack.pop());
+        if (exploredStack.length <= 0) {
+          return;
+        }
+        openedTags[tag] -= 1;
+
+        const top = _.last(exploredStack);
+        if (top.tag === tag && openedTags[tag] === 0) {
+          const topAttr = top.attribute;
+          unexploredStack.push(exploredStack.pop());
         }
       }
     });
@@ -96,10 +120,9 @@ class CharSeo {
     parser.write(this._htmlData); // need to change this to data
     parser.end();
 
-    // reset state
     this._reset();
 
-    return result;
+    return treePathExplored;
   }
 
   /**
@@ -125,7 +148,7 @@ const testHtml = `
     <img alt='f'>
     <h1>My First Heading</h1>
     <p>My first paragraph.</p>
-    <div style='color:black'>
+    <div style='color:black' display='block'>
         <div style='color:blue'>
             <div style='color:green'>
             </div>
@@ -136,8 +159,13 @@ const testHtml = `
 </html>
 `;
 
-expect(new CharSeo('', testHtml).tag('div').exist()).to.be.true;
-expect(new CharSeo('', testHtml).tag('div').hasChild('div').exist()).to.be.true;
-expect(new CharSeo('', testHtml).tag('div').hasChildren(['div', 'div']).exist()).to.be.true;
-expect(new CharSeo('', testHtml).tag('h2').exist()).to.be.false;
-expect(new CharSeo('', testHtml).tag('img').hasAttributes(['alt']).exist()).to.be.true;
+expect(new CharSeo('', testHtml).tag({tag: 'div'}).exist()).to.be.true;
+expect(new CharSeo('', testHtml).tag({tag: 'div'}).hasChild({tag: 'div'}).exist()).to.be.true;
+expect(new CharSeo('', testHtml).tag({tag: 'div'}).hasChildren([{tag: 'div'}, {tag: 'div'}]).exist()).to.be.true;
+expect(new CharSeo('', testHtml).tag({tag: 'h2'}).exist()).to.be.false;
+expect(new CharSeo('', testHtml).tag({tag: 'img'}).exist()).to.be.true;
+expect(new CharSeo('', testHtml)
+  .tag({tag: 'div', attribute: {style: 'color:blue'}})
+  .hasChild({tag: 'div', attribute: {style: 'color:black', display:'block'}})
+  .hasChild({tag: 'div', attribute: {style: 'color:green'}})
+  .exist()).to.be.true;
