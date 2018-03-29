@@ -5,7 +5,8 @@ let htmlparser2 = require('htmlparser2');
 
 type HtmlNode = {
   tag: HtmlTag,
-  attributes?: Attribute
+  attribute?: Attribute,
+  notAttribute?: Attribute
 }
 
 // Use strings for now. Can be made more robust
@@ -13,7 +14,7 @@ type HtmlNode = {
 type HtmlTag = string
 
 type Attribute = {
-  attr: string
+  [attr: string]: string
 }
 
 class CharSeo {
@@ -83,13 +84,16 @@ class CharSeo {
         const top: HtmlNode = _.last(unexploredStack);
         if (top.tag === tag) {
           const topAttr = top.attributes || {};
+          const topNotAttr = top.notAttributes || {};
+          const topAttrKeys = Object.keys(topAttr);
+          const topNotAttrKeys = Object.keys(topNotAttr);
           if (openedTags[tag]) {
             openedTags[tag] += 1;
           }
 
-          // passes when top node attributes are subset of
-          // current node. null attributes is considered subset
-          if (Object.keys(topAttr).every(key => topAttr[key] === attr[key])) {
+          // checks for topAttr ⊆ attr && notAttr ∩ attr == ∅
+          if (topAttrKeys.every(key => topAttr[key] === attr[key]) &&
+              !topNotAttrKeys.some(key => key && topNotAttr[key] === attr[key])) {
             exploredStack.push(unexploredStack.pop());
             openedTags[tag] = openedTags[tag] ? openedTags[tag] + 1 : 1
           }
@@ -160,6 +164,7 @@ const testHtml = `
 `;
 
 expect(new CharSeo('', testHtml).tag({tag: 'div'}).exist()).to.be.true;
+expect(new CharSeo('', testHtml).tag({tag: 'div', notAttributes: {display: 'inline'}}).exist()).to.be.true;
 expect(new CharSeo('', testHtml).tag({tag: 'div'}).hasChild({tag: 'div'}).exist()).to.be.true;
 expect(new CharSeo('', testHtml).tag({tag: 'div'}).hasChildren([{tag: 'div'}, {tag: 'div'}]).exist()).to.be.true;
 expect(new CharSeo('', testHtml).tag({tag: 'h2'}).exist()).to.be.false;
