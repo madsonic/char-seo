@@ -24,12 +24,12 @@ class CharSeo {
   _strict: boolean;
   _htmlData: string;
 
-  constructor(filePath: string, data: string, isStrict?: boolean) {
+  constructor(filePath: string, data: string, isStrict: ?boolean) {
     this.filePath = filePath;
     this.treePath = [];
 
     this._notFlag = false;
-    this._strict = isStrict || true;
+    this._strict = isStrict != null ? isStrict : true;
 
     this._htmlData = data;
   }
