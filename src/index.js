@@ -100,7 +100,7 @@ class CharSeo {
   This is a terminal verb
   */
   exist(): boolean {
-    const treePath = this.treePath;
+    const treePath = [...this.treePath];
     let unexploredStack = [...treePath].reverse();
     let exploredStack = [];
     let treePathExplored = _.isEqual(treePath, exploredStack);
@@ -130,7 +130,7 @@ class CharSeo {
   Count the number of subjects that appear more than @times
   */
   moreThan(times: number): boolean {
-    const treePath = this.treePath;
+    const treePath = [...this.treePath];
     let unexploredStack = [...treePath].reverse();
     let exploredStack = [];
     let treePathExplored = _.isEqual(treePath, exploredStack);
