@@ -20,10 +20,6 @@ type Attribute = {
 class CharSeo {
   filePath: string;
   treePath: HtmlNode[]; // path in a tree with the first node closest to the root
-  attributesPresent: Attribute[];
-  attributesAbsent: Attribute[];
-  _checkAttrExistence: boolean;
-  _checkTagExistence: boolean;
   _htmlData: string
 
   constructor(filePath: string, data: string) {
@@ -54,8 +50,7 @@ class CharSeo {
     return this;
   }
 
-  hasAttributes(attributes: Attribute[]): CharSeo {
-    this.attributesPresent = [...attributes];
+  hasAttributes(attribute: Attribute): CharSeo {
     return this;
   }
 
@@ -134,11 +129,6 @@ class CharSeo {
    */
   _reset() {
     this.treePath = [];
-    this.attributesPresent = [];
-    this.attributesAbsent = [];
-
-    this._checkAttrExistence = true;
-    this._checkTagExistence = true;
   }
 }
 
