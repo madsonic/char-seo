@@ -36,6 +36,10 @@ class CharSeo {
     return this;
   }
 
+  get does(): CharSeo {
+    return this;
+  }
+
   get not(): CharSeo {
     this.notFlag = !this.notFlag;
     return this;
@@ -234,5 +238,6 @@ expect(new CharSeo('', testHtml)
     .hasAttribute({style: 'color:blue'})
     .hasChild('div')
     .hasAttribute({style: 'color:grey'})
+    .does
     .not
     .exist()).to.be.true;
