@@ -20,16 +20,24 @@ type Attribute = {
 class CharSeo {
   filePath: string;
   treePath: HtmlNode[]; // path in a tree with the first node closest to the root
-  _htmlData: string
+  notFlag: boolean;
+  _htmlData: string;
 
   constructor(filePath: string, data: string) {
     this.filePath = filePath;
     this.treePath = [];
 
+    this.notFlag = false;
+
     this._htmlData = data;
   }
 
   get appear(): CharSeo {
+    return this;
+  }
+
+  get not(): CharSeo {
+    this.notFlag = !this.notFlag;
     return this;
   }
 
@@ -143,7 +151,7 @@ class CharSeo {
 
     this._reset();
 
-    return treePathExplored;
+    return treePathExplored ? !this.notFlag : this.notFlag; //XOR
   }
 
   /**
@@ -219,4 +227,12 @@ expect(new CharSeo('', testHtml)
 expect(new CharSeo('', testHtml)
     .hasTag('div')
     .hasAttribute({style: 'color:blue'})
+    .exist()).to.be.true;
+
+expect(new CharSeo('', testHtml)
+    .hasTag('div')
+    .hasAttribute({style: 'color:blue'})
+    .hasChild('div')
+    .hasAttribute({style: 'color:grey'})
+    .not
     .exist()).to.be.true;
