@@ -20,14 +20,16 @@ type Attribute = {
 class CharSeo {
   filePath: string;
   treePath: HtmlNode[]; // path in a tree with the first node closest to the root
-  notFlag: boolean;
+  _notFlag: boolean;
+  _strict: boolean;
   _htmlData: string;
 
-  constructor(filePath: string, data: string) {
+  constructor(filePath: string, data: string, isStrict?: boolean) {
     this.filePath = filePath;
     this.treePath = [];
 
-    this.notFlag = false;
+    this._notFlag = false;
+    this._strict = isStrict || true;
 
     this._htmlData = data;
   }
@@ -41,7 +43,7 @@ class CharSeo {
   }
 
   get not(): CharSeo {
-    this.notFlag = !this.notFlag;
+    this._notFlag = !this._notFlag;
     return this;
   }
 
@@ -106,47 +108,16 @@ class CharSeo {
 
     const parser = new htmlparser2.Parser({
       onopentag: (tag, attr) => {
-        if (unexploredStack.length <= 0) {
-          return;
-        }
-
-        const top: HtmlNode = _.last(unexploredStack);
-        if (top.tag === tag) {
-          const topAttr = top.attributes || {};
-          const topNotAttr = top.notAttributes || {};
-          const topAttrKeys = Object.keys(topAttr);
-          const topNotAttrKeys = Object.keys(topNotAttr);
-          if (openedTags[tag]) {
-            openedTags[tag] += 1;
-          }
-
-          // checks for topAttr ⊆ attr && notAttr ∩ attr == ∅
-          if (topAttrKeys.every(key => topAttr[key] === attr[key]) &&
-              !topNotAttrKeys.some(key => key && topNotAttr[key] === attr[key])) {
-            exploredStack.push(unexploredStack.pop());
-            openedTags[tag] = openedTags[tag] ? openedTags[tag] + 1 : 1
-          }
-        }
-
+        this._explore(tag, attr, unexploredStack, exploredStack, openedTags);
         // check if all target tags have been traversed
         // if path is found we stop parsing
         treePathExplored = _.isEqual(treePath, exploredStack);
         if (treePathExplored) {
           parser.reset();
         }
-
       },
       onclosetag: (tag) => {
-        if (exploredStack.length <= 0) {
-          return;
-        }
-        openedTags[tag] -= 1;
-
-        const top = _.last(exploredStack);
-        if (top.tag === tag && openedTags[tag] === 0) {
-          const topAttr = top.attribute;
-          unexploredStack.push(exploredStack.pop());
-        }
+        this._unexplore(tag, unexploredStack, exploredStack, openedTags);
       }
     });
 
@@ -155,7 +126,98 @@ class CharSeo {
 
     this._reset();
 
-    return treePathExplored ? !this.notFlag : this.notFlag; //XOR
+    return treePathExplored ? !this._notFlag : this._notFlag; //XOR
+  }
+
+  /*
+  Count the number of subjects that appear more than @times
+  */
+  moreThan(times: number): boolean {
+    const treePath = this.treePath;
+    let unexploredStack = [...treePath].reverse();
+    let exploredStack = [];
+    let treePathExplored = _.isEqual(treePath, exploredStack);
+    let openedTags: {tag?: HtmlTag} = {}; // track open/close tag pairs
+    let pathsFound = 0;
+
+    const parser = new htmlparser2.Parser({
+      onopentag: (tag, attr) => {
+        this._explore(tag, attr, unexploredStack, exploredStack, openedTags);
+        // check if all target tags have been traversed
+        // if path is found we stop parsing
+        if (_.isEqual(treePath, exploredStack)) {
+          pathsFound += 1;
+        }
+      },
+      onclosetag: (tag) => {
+        this._unexplore(tag, unexploredStack, exploredStack, openedTags);
+      }
+    });
+
+    parser.write(this._htmlData); // need to change this to data
+    parser.end();
+
+    this._reset();
+
+    return pathsFound > times;
+  }
+
+  /*
+  Update the stacks and openedTags when tags are opened
+  */
+  _explore(tag: HtmlTag, attr: Attribute, unexploredStack: HtmlNode[], exploredStack: HtmlNode[], openedTags: {tag?: HtmlTag}) {
+    if (unexploredStack.length <= 0) {
+      return;
+    }
+
+    const top: HtmlNode = _.last(unexploredStack);
+    if (top.tag === tag) {
+      const topAttr = top.attributes || {};
+      const topNotAttr = top.notAttributes || {};
+      const topAttrKeys = Object.keys(topAttr);
+      const topNotAttrKeys = Object.keys(topNotAttr);
+      if (openedTags[tag]) {
+        openedTags[tag] += 1;
+      }
+
+      if (this._checkAttributes(topAttr, topNotAttr, attr)) {
+        exploredStack.push(unexploredStack.pop());
+        openedTags[tag] = openedTags[tag] ? openedTags[tag] + 1 : 1
+      }
+    }
+  }
+
+  /*
+  Reverse any changes to the stacks and openedTags when tags are closed
+  */
+  _unexplore(tag: HtmlTag, unexploredStack: HtmlNode[], exploredStack: HtmlNode[], openedTags: {tag?: HtmlTag}) {
+    if (exploredStack.length <= 0) {
+      return;
+    }
+    openedTags[tag] -= 1;
+
+    const top = _.last(exploredStack);
+    if (top.tag === tag && openedTags[tag] === 0) {
+      const topAttr = top.attribute;
+      unexploredStack.push(exploredStack.pop());
+    }
+  }
+
+  _checkAttributes(topAttr: Attribute, topNotAttr: Attribute, foundAttr: Attribute) {
+    const topAttrKeys = Object.keys(topAttr);
+    const topNotAttrKeys = Object.keys(topNotAttr);
+
+    // checks for topAttr ⊆ attr && notAttr ∩ attr == ∅
+    // strict checks for attribute value
+    const isSubset = topAttrKeys.every(key => {
+      return this._strict ? topAttr[key] === foundAttr[key] : foundAttr.hasOwnProperty(key);
+    });
+
+    const nullIntersection = !topNotAttrKeys.some(key => {
+      return key && this._strict ? topNotAttr[key] === foundAttr[key] : foundAttr.hasOwnProperty(key);
+    });
+
+    return isSubset && nullIntersection;
   }
 
   /**
@@ -241,3 +303,8 @@ expect(new CharSeo('', testHtml)
     .does
     .not
     .exist()).to.be.true;
+
+expect(new CharSeo('', testHtml)
+    .hasTag('div')
+    .appear
+    .moreThan(2)).to.be.true;
