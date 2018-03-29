@@ -111,10 +111,7 @@ class CharSeo {
         this._explore(tag, attr, unexploredStack, exploredStack, openedTags);
         // check if all target tags have been traversed
         // if path is found we stop parsing
-        treePathExplored = _.isEqual(treePath, exploredStack);
-        if (treePathExplored) {
-          parser.reset();
-        }
+        treePathExplored |= _.isEqual(treePath, exploredStack);
       },
       onclosetag: (tag) => {
         this._unexplore(tag, unexploredStack, exploredStack, openedTags);
