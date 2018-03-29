@@ -225,83 +225,87 @@ class CharSeo {
   }
 }
 
-const testHtml = `
+const html1 = `
 <!DOCTYPE html>
-<html lang=en>
 <head>
-
+  <meta charset='UTF-8'>
 </head>
-<body>
-    <img alt='f'>
-    <h1>My First Heading</h1>
-    <p>My first paragraph.</p>
-    <div style='color:black' display='block'>
-        <div style='color:blue'>
-            <div style='color:green'>
-            </div>
-        </div>
+<html lang=en>
+  <body>
+    <h1>Title1</h1>
+    <h1>Title2</h1>
+    <div>
+      <img alt='f' />
+      <img />
+      <a rel='next'>link</a>
+      <a>link</a>
     </div>
-</body>
-
+    <p>
+      <strong>word1</strong>
+      <strong>word2</strong>
+      <strong>word3</strong>
+    </p>
+  </body>
 </html>
 `;
 
-expect(new CharSeo('', testHtml).tag({tag: 'div'}).exist()).to.be.true;
-expect(new CharSeo('', testHtml).hasTag('div').exist()).to.be.true;
-expect(new CharSeo('', testHtml).tag({tag: 'div', notAttributes: {display: 'inline'}}).exist()).to.be.true;
-expect(new CharSeo('', testHtml)
-  .tag({tag: 'div'})
-  .hasChild('div')
+// Rule 1 check
+expect(new CharSeo('', html1, false)
+  .hasTag('img')
+  .hasNoAttribute({alt: ''})
   .exist()).to.be.true;
-expect(new CharSeo('', testHtml)
-  .tag({tag: 'div'})
-  .hasChildren(['div', 'div'])
-  .exist()).to.be.true;
-expect(new CharSeo('', testHtml)
-  .tag({tag: 'h2'})
-  .exist()).to.be.false;
-expect(new CharSeo('', testHtml)
-  .tag({tag: 'img'})
-  .exist()).to.be.true;
-expect(new CharSeo('', testHtml)
-  .tag({tag: 'div', attribute: {style: 'color:blue'}})
-  .hasChild('div')
-  .hasNoAttribute({style: 'color:black', display:'block'})
-  .hasChild('div')
-  .hasAttribute({style: 'color:green'})
+expect(new CharSeo('', html1, false)
+  .hasTag('img')
+  .hasAttribute({alt: ''})
+  .does.not.exist()).to.be.false;
+expect(new CharSeo('', html1)
+  .hasTag('img')
+  .hasAttribute({alt: 'f'})
   .exist()).to.be.true;
 
-expect(new CharSeo('', testHtml)
-  .tag({tag: 'div', attribute: {style: 'color:blue'}})
-  .hasChild('div')
-  .hasNoAttribute({style: 'color:black', display:'block'})
-  .hasChild('div')
+// Rule 2
+expect(new CharSeo('', html1, false)
+  .hasTag('a')
+  .hasNoAttribute({rel: ''})
+  .exist()).to.be.true;
+expect(new CharSeo('', html1)
+  .hasTag('a')
+  .hasAttribute({rel: 'next'})
   .exist()).to.be.true;
 
-expect(new CharSeo('', testHtml)
-    .tag({tag: 'div'})
-    .hasAttribute({style: 'color:blue'})
-    .exist()).to.be.true;
-expect(new CharSeo('', testHtml)
-    .tag({tag: 'div'})
-    .hasAttribute({style: 'color:grey'})
-    .exist()).to.be.false;
+// Rule 3.1
+expect(new CharSeo('', html1)
+  .hasTag('head')
+  .hasChild('title')
+  .does.not.exist()).to.be.true;
 
-expect(new CharSeo('', testHtml)
-    .hasTag('div')
-    .hasAttribute({style: 'color:blue'})
-    .exist()).to.be.true;
+// Rule 3.2
+expect(new CharSeo('', html1)
+  .hasTag('head')
+  .hasChild('meta')
+  .hasAttribute({name: 'descriptions'})
+  .does.not.exist()).to.be.true;
 
-expect(new CharSeo('', testHtml)
-    .hasTag('div')
-    .hasAttribute({style: 'color:blue'})
-    .hasChild('div')
-    .hasAttribute({style: 'color:grey'})
-    .does
-    .not
-    .exist()).to.be.true;
+// Rule 3.3.
+expect(new CharSeo('', html1)
+  .hasTag('head')
+  .hasChild('meta')
+  .hasAttribute({name: 'keywords'})
+  .does.not.exist()).to.be.true;
 
-expect(new CharSeo('', testHtml)
-    .hasTag('div')
-    .appear
-    .moreThan(2)).to.be.true;
+// Rule 4
+expect(new CharSeo('', html1)
+  .hasTag('strong')
+  .appear
+  .moreThan(2)).to.be.true;
+
+// Rule 5
+expect(new CharSeo('', html1)
+  .hasTag('h1')
+  .appear
+  .moreThan(1)).to.be.true;
+expect(new CharSeo('', html1)
+  .hasTag('div')
+  .hasChild('h1')
+  .appear
+  .moreThan(0)).to.be.false;
