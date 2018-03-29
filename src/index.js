@@ -5,8 +5,8 @@ let htmlparser2 = require('htmlparser2');
 
 type HtmlNode = {
   tag: HtmlTag,
-  attribute?: Attribute,
-  notAttribute?: Attribute
+  attributes?: Attribute,
+  notAttributes?: Attribute
 }
 
 // Use strings for now. Can be made more robust
@@ -38,21 +38,43 @@ class CharSeo {
     return this;
   }
 
-  hasChildren(nodes: HtmlNode[]): CharSeo {
-    // check for root existence
-    this.treePath = [...this.treePath, ...nodes];
+  hasTag(tag: HtmlTag): CharSeo {
+    this.treePath = [{tag: tag}];
     return this;
   }
 
-  hasChild(node: HtmlNode): CharSeo {
+  hasChildren(tags: HtmlTag[]): CharSeo {
     // check for root existence
-    this.treePath = [...this.treePath, node];
+    const treePath = [...this.treePath];
+    const nodes = [...tags].map(tag => ({tag: tag}));
+    this.treePath = treePath.concat(nodes);
     return this;
   }
 
-  hasAttributes(attribute: Attribute): CharSeo {
+  hasChild(tag: HtmlTag): CharSeo {
+    // check for root existence
+    this.hasChildren([tag])
     return this;
   }
+
+  hasAttribute(attribute: Attribute): CharSeo {
+    const treePath = [...this.treePath];
+    const lastAddedNode = _.last(treePath);
+    lastAddedNode.attributes = attribute;
+    this.treePath = treePath;
+
+    return this;
+  }
+
+  hasNoAttribute(attribute: Attribute): CharSeo {
+    const treePath = [...this.treePath];
+    const lastAddedNode = _.last(treePath);
+    lastAddedNode.notAttributes = attribute;
+    this.treePath = treePath;
+
+    return this;
+  }
+
 
   /**
   Search for specified tree path in the DOM.
@@ -154,13 +176,47 @@ const testHtml = `
 `;
 
 expect(new CharSeo('', testHtml).tag({tag: 'div'}).exist()).to.be.true;
+expect(new CharSeo('', testHtml).hasTag('div').exist()).to.be.true;
 expect(new CharSeo('', testHtml).tag({tag: 'div', notAttributes: {display: 'inline'}}).exist()).to.be.true;
-expect(new CharSeo('', testHtml).tag({tag: 'div'}).hasChild({tag: 'div'}).exist()).to.be.true;
-expect(new CharSeo('', testHtml).tag({tag: 'div'}).hasChildren([{tag: 'div'}, {tag: 'div'}]).exist()).to.be.true;
-expect(new CharSeo('', testHtml).tag({tag: 'h2'}).exist()).to.be.false;
-expect(new CharSeo('', testHtml).tag({tag: 'img'}).exist()).to.be.true;
+expect(new CharSeo('', testHtml)
+  .tag({tag: 'div'})
+  .hasChild('div')
+  .exist()).to.be.true;
+expect(new CharSeo('', testHtml)
+  .tag({tag: 'div'})
+  .hasChildren(['div', 'div'])
+  .exist()).to.be.true;
+expect(new CharSeo('', testHtml)
+  .tag({tag: 'h2'})
+  .exist()).to.be.false;
+expect(new CharSeo('', testHtml)
+  .tag({tag: 'img'})
+  .exist()).to.be.true;
 expect(new CharSeo('', testHtml)
   .tag({tag: 'div', attribute: {style: 'color:blue'}})
-  .hasChild({tag: 'div', attribute: {style: 'color:black', display:'block'}})
-  .hasChild({tag: 'div', attribute: {style: 'color:green'}})
+  .hasChild('div')
+  .hasNoAttribute({style: 'color:black', display:'block'})
+  .hasChild('div')
+  .hasAttribute({style: 'color:green'})
   .exist()).to.be.true;
+
+expect(new CharSeo('', testHtml)
+  .tag({tag: 'div', attribute: {style: 'color:blue'}})
+  .hasChild('div')
+  .hasNoAttribute({style: 'color:black', display:'block'})
+  .hasChild('div')
+  .exist()).to.be.true;
+
+expect(new CharSeo('', testHtml)
+    .tag({tag: 'div'})
+    .hasAttribute({style: 'color:blue'})
+    .exist()).to.be.true;
+expect(new CharSeo('', testHtml)
+    .tag({tag: 'div'})
+    .hasAttribute({style: 'color:grey'})
+    .exist()).to.be.false;
+
+expect(new CharSeo('', testHtml)
+    .hasTag('div')
+    .hasAttribute({style: 'color:blue'})
+    .exist()).to.be.true;
