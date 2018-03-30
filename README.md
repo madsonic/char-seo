@@ -3,6 +3,7 @@ SEO rules checking in natural language style.
 
 # Getting Started
 ```js
+npm install
 npm run build
 ```
 
