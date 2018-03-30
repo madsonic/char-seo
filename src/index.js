@@ -23,13 +23,15 @@ class CharSeo {
   _notFlag: boolean;
   _strict: boolean;
   _htmlData: string;
+  _print: boolean;
 
-  constructor(filePath: string, data: string, isStrict: ?boolean) {
+  constructor(filePath: string, data: string, isStrict: ?boolean, print: ?boolean) {
     this.filePath = filePath;
     this.treePath = [];
 
     this._notFlag = false;
     this._strict = isStrict != null ? isStrict : true;
+    this._print = print != null ? print : true;
 
     this._htmlData = data;
   }
@@ -89,7 +91,6 @@ class CharSeo {
     return this;
   }
 
-
   /**
   Search for specified tree path in the DOM.
 
@@ -120,6 +121,15 @@ class CharSeo {
 
     parser.write(this._htmlData); // need to change this to data
     parser.end();
+
+    if (this._print && treePathExplored) {
+      let output = treePath.map(node => this._toString(node)).join(', ');
+      process.stdout.write(
+        `${output}` +
+        `${this._notFlag ? ' do not exists' : ' exists'}` +
+        '\n'
+      );
+    }
 
     this._reset();
 
@@ -215,6 +225,21 @@ class CharSeo {
     });
 
     return isSubset && nullIntersection;
+  }
+
+  _toString(htmlNode: HtmlNode) {
+    const formAttr = attr => (
+      Object.entries(attr)
+        .map(pair => this._strict ? pair : pair.slice(0, 1))
+        .map(pair => pair.join('='))
+        .join(' ')
+    );
+    let attrString = formAttr(htmlNode.attributes);
+    let notAttrString = formAttr(htmlNode.notAttributes);
+
+    return `<${htmlNode.tag}` +
+            `${attrString.length > 0 ? ` ${attrString}>` : '>'}` +
+            `${notAttrString.length > 0 ? ` without ${notAttrString}` : ''}`;
   }
 
   /**
