@@ -108,7 +108,7 @@ Currently only relative ordering is supported, i.e. immediate children relations
 </div>
 ```
 ```js
-.hasTag('div').hasChild('div').exist() // will yield for the given HTML
+.hasTag('div').hasChild('div').exist() // will yield true for the given HTML
 ```
 
 However, it can be easily extended to support such a relationship by adding more words such as `.hasImmediateChild` and specify the check routine.
