@@ -103,7 +103,7 @@ class CharSeo {
   exist(): boolean {
     const treePath = [...this.treePath];
     let unexploredStack = [...treePath].reverse();
-    let exploredStack = [];
+    let exploredStack: HtmlNode[] = [];
     let treePathExplored = _.isEqual(treePath, exploredStack);
     let openedTags: {tag?: HtmlTag} = {}; // track open/close tag pairs
 
@@ -142,8 +142,7 @@ class CharSeo {
   moreThan(times: number): boolean {
     const treePath = [...this.treePath];
     let unexploredStack = [...treePath].reverse();
-    let exploredStack = [];
-    let treePathExplored = _.isEqual(treePath, exploredStack);
+    let exploredStack: HtmlNode[] = [];
     let openedTags: {tag?: HtmlTag} = {}; // track open/close tag pairs
     let pathsFound = 0;
 
@@ -164,9 +163,22 @@ class CharSeo {
     parser.write(this._htmlData); // need to change this to data
     parser.end();
 
+    const limitSatisfied = this._notFlag ?
+                            pathsFound <= times :
+                            pathsFound > times;
+
+    if (this._print) {
+      let output = treePath.map(node => this._toString(node)).join(', ');
+      process.stdout.write(
+        'There are ' +
+        `${limitSatisfied && this._notFlag ? 'not ' : ''}` +
+        `more than ${times} ${output}\n`
+      );
+    }
+
     this._reset();
 
-    return pathsFound > times;
+    return limitSatisfied;
   }
 
   /*
@@ -295,8 +307,17 @@ expect(new CharSeo('', html1, false)
   .exist()).to.be.true;
 expect(new CharSeo('', html1)
   .hasTag('a')
+  .hasNoAttribute({rel: ''})
+  .exist()).to.be.true;
+expect(new CharSeo('', html1)
+  .hasTag('a')
   .hasAttribute({rel: 'next'})
   .exist()).to.be.true;
+  expect(new CharSeo('', html1)
+    .hasTag('div')
+    .hasChild('img')
+    .exist()).to.be.true;
+
 
 // Rule 3.1
 expect(new CharSeo('', html1)
