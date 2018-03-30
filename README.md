@@ -87,6 +87,10 @@ The only purpose of connectives is to allow the constructor statement to be read
 __Note__: Ungrammatical sentence are not forbidden
 
 ## Action
+Action does all the heavy lifting and check for the subjects that have been specified.
+
+__Note__ action words are terminal words; no other words should come after them.
+
 ### exist()
 Checks if the subjects specified in the order exists
 
