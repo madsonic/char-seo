@@ -114,18 +114,21 @@ class CharSeo {
     parser.write(this._htmlData);
     parser.end();
 
-    if (this._print && treePathExplored) {
+    const pathSatisfied = treePathExplored ?
+                          !this._notFlag :
+                          this._notFlag;
+    if (this._print) {
       let output = treePath.map(node => this._toString(node)).join(', ');
       process.stdout.write(
         `${output}` +
-        `${this._notFlag ? ' do not exists' : ' exists'}` +
-        '\n'
+        `${pathSatisfied && this._notFlag ? ' does not' : '' }` +
+        ' exist\n'
       );
     }
 
     this._reset();
 
-    return treePathExplored ? !this._notFlag : this._notFlag;
+    return pathSatisfied;
   }
 
   /*
