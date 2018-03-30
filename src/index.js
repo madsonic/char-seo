@@ -5,8 +5,8 @@ let htmlparser2 = require('htmlparser2');
 
 type HtmlNode = {
   tag: HtmlTag,
-  attributes?: Attribute,
-  notAttributes?: Attribute
+  attributes: Attribute,
+  notAttributes: Attribute
 }
 
 // Use strings for now. Can be made more robust
@@ -53,14 +53,14 @@ class CharSeo {
   }
 
   hasTag(tag: HtmlTag): CharSeo {
-    this.treePath = [{tag: tag}];
+    this.treePath = [{tag: tag, attributes: {}, notAttributes: {}}];
     return this;
   }
 
   hasChildren(tags: HtmlTag[]): CharSeo {
     // check for root existence
     const treePath = [...this.treePath];
-    const nodes = [...tags].map(tag => ({tag: tag}));
+    const nodes = [...tags].map(tag => ({tag: tag, attributes: {}, notAttributes: {}}));
     this.treePath = treePath.concat(nodes);
     return this;
   }
@@ -169,8 +169,8 @@ class CharSeo {
 
     const top: HtmlNode = _.last(unexploredStack);
     if (top.tag === tag) {
-      const topAttr = top.attributes || {};
-      const topNotAttr = top.notAttributes || {};
+      const topAttr = top.attributes;
+      const topNotAttr = top.notAttributes;
       const topAttrKeys = Object.keys(topAttr);
       const topNotAttrKeys = Object.keys(topNotAttr);
       if (openedTags[tag]) {
