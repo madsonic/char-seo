@@ -60,7 +60,6 @@ class CharSeo {
   }
 
   hasChildren(tags: HtmlTag[]): CharSeo {
-    // check for root existence
     const treePath = [...this._treePath];
     const nodes = [...tags].map(tag => ({tag: tag, attributes: {}, notAttributes: {}}));
     this._treePath = treePath.concat(nodes);
@@ -68,7 +67,6 @@ class CharSeo {
   }
 
   hasChild(tag: HtmlTag): CharSeo {
-    // check for root existence
     this.hasChildren([tag])
     return this;
   }
@@ -98,7 +96,7 @@ class CharSeo {
 
   If the tree path exists in the DOM, the unexplored stack will be emptied out into the explored stack, vice versa if such a path does not exist.
 
-  This is a terminal verb
+  This is a terminal word
   */
   exist(): boolean {
     const treePath = [...this._treePath];
@@ -111,7 +109,6 @@ class CharSeo {
       onopentag: (tag, attr) => {
         this._explore(tag, attr, unexploredStack, exploredStack, openedTags);
         // check if all target tags have been traversed
-        // if path is found we stop parsing
         treePathExplored |= _.isEqual(treePath, exploredStack);
       },
       onclosetag: (tag) => {
@@ -119,7 +116,7 @@ class CharSeo {
       }
     });
 
-    parser.write(this._htmlData); // need to change this to data
+    parser.write(this._htmlData);
     parser.end();
 
     if (this._print && treePathExplored) {
@@ -138,6 +135,8 @@ class CharSeo {
 
   /*
   Count the number of subjects that appear more than @times
+
+  This is a terminal word
   */
   moreThan(times: number): boolean {
     const treePath = [...this._treePath];
@@ -150,7 +149,6 @@ class CharSeo {
       onopentag: (tag, attr) => {
         this._explore(tag, attr, unexploredStack, exploredStack, openedTags);
         // check if all target tags have been traversed
-        // if path is found we stop parsing
         if (_.isEqual(treePath, exploredStack)) {
           pathsFound += 1;
         }
@@ -160,7 +158,7 @@ class CharSeo {
       }
     });
 
-    parser.write(this._htmlData); // need to change this to data
+    parser.write(this._htmlData);
     parser.end();
 
     const limitSatisfied = this._notFlag ?
