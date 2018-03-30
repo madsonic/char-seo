@@ -49,11 +49,6 @@ class CharSeo {
     return this;
   }
 
-  tag(node: HtmlNode): CharSeo {
-    this._treePath = [node];
-    return this;
-  }
-
   hasTag(tag: HtmlTag): CharSeo {
     this._treePath = [{tag: tag, attributes: {}, notAttributes: {}}];
     return this;
