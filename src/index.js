@@ -1,5 +1,6 @@
 // @flow
 const _ = require('lodash');
+const fs = require('fs');
 let htmlparser2 = require('htmlparser2');
 
 type HtmlNode = {
@@ -17,22 +18,22 @@ type Attribute = {
 }
 
 class CharSeo {
-  filePath: string;
-  treePath: HtmlNode[]; // path in a tree with the first node closest to the root
+  _filePath: string;
+  _treePath: HtmlNode[]; // path in a tree with the first node closest to the root
   _notFlag: boolean;
   _strict: boolean;
   _htmlData: string;
   _print: boolean;
 
-  constructor(filePath: string, data: string, isStrict: ?boolean, print: ?boolean) {
-    this.filePath = filePath;
-    this.treePath = [];
+  constructor(filePath: string, isStrict: ?boolean, print: ?boolean) {
+    this._filePath = filePath;
+    this._treePath = [];
 
     this._notFlag = false;
     this._strict = isStrict != null ? isStrict : true;
     this._print = print != null ? print : true;
 
-    this._htmlData = data;
+    this._htmlData = fs.readFileSync(this._filePath, 'utf8');
   }
 
   get appear(): CharSeo {
@@ -49,20 +50,20 @@ class CharSeo {
   }
 
   tag(node: HtmlNode): CharSeo {
-    this.treePath = [node];
+    this._treePath = [node];
     return this;
   }
 
   hasTag(tag: HtmlTag): CharSeo {
-    this.treePath = [{tag: tag, attributes: {}, notAttributes: {}}];
+    this._treePath = [{tag: tag, attributes: {}, notAttributes: {}}];
     return this;
   }
 
   hasChildren(tags: HtmlTag[]): CharSeo {
     // check for root existence
-    const treePath = [...this.treePath];
+    const treePath = [...this._treePath];
     const nodes = [...tags].map(tag => ({tag: tag, attributes: {}, notAttributes: {}}));
-    this.treePath = treePath.concat(nodes);
+    this._treePath = treePath.concat(nodes);
     return this;
   }
 
@@ -73,19 +74,19 @@ class CharSeo {
   }
 
   hasAttribute(attribute: Attribute): CharSeo {
-    const treePath = [...this.treePath];
+    const treePath = [...this._treePath];
     const lastAddedNode = _.last(treePath);
     lastAddedNode.attributes = attribute;
-    this.treePath = treePath;
+    this._treePath = treePath;
 
     return this;
   }
 
   hasNoAttribute(attribute: Attribute): CharSeo {
-    const treePath = [...this.treePath];
+    const treePath = [...this._treePath];
     const lastAddedNode = _.last(treePath);
     lastAddedNode.notAttributes = attribute;
-    this.treePath = treePath;
+    this._treePath = treePath;
 
     return this;
   }
@@ -100,7 +101,7 @@ class CharSeo {
   This is a terminal verb
   */
   exist(): boolean {
-    const treePath = [...this.treePath];
+    const treePath = [...this._treePath];
     let unexploredStack = [...treePath].reverse();
     let exploredStack: HtmlNode[] = [];
     let treePathExplored = _.isEqual(treePath, exploredStack);
@@ -139,7 +140,7 @@ class CharSeo {
   Count the number of subjects that appear more than @times
   */
   moreThan(times: number): boolean {
-    const treePath = [...this.treePath];
+    const treePath = [...this._treePath];
     let unexploredStack = [...treePath].reverse();
     let exploredStack: HtmlNode[] = [];
     let openedTags: {tag?: HtmlTag} = {}; // track open/close tag pairs
@@ -257,7 +258,7 @@ class CharSeo {
    * Resets state so that another rule check can be performed on the same file/stream
    */
   _reset() {
-    this.treePath = [];
+    this._treePath = [];
   }
 }
 
