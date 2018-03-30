@@ -6,7 +6,8 @@
   "scripts": {
     "build": "flow-remove-types src/ -d lib/",
     "flow": "flow",
-    "start": "node lib/index"
+    "start": "node lib/index",
+    "test": "npm run build && node test/*.test*"
   },
   "repository": {
     "type": "git",
